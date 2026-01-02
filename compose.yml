@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  koboldcpp:
+    image: koboldcpp-custom:homoai
+    container_name: koboldcpp
+    environment:
+      KCPP_MODEL: "/app/models/hathor_stable-v0.2-l3-8b-q8_0.gguf"
+      KCPP_ARGS: >
+        --usecublas
+        --contextsize 65536
+        --gpulayers 31
+        --flashattention
+        --quantkv 2
+        # IMPORTANT: don't append a stray "0" after any flag.
+        # If you eventually try --remotetunnel, it must be just "--remotetunnel" (no value).
+
+      KCPP_HOST: "0.0.0.0"
+      KCPP_PORT: "5001"
+
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+
+    volumes:
+      - /home/damjan/KoboldCPP:/app/models
+    ports:
+      - "5001:5001"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: "all"
+              capabilities: ["gpu"]
+    restart: unless-stopped

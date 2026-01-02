@@ -1,0 +1,37 @@
+name: Build KoboldCpp Image
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-package:
+    runs-on: self-hosted
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --tag koboldcpp-custom:${{ github.sha }} \
+            .
+
+      - name: Export Docker image
+        run: |
+          mkdir -p artifacts
+          docker save koboldcpp-custom:${{ github.sha }} | gzip > artifacts/koboldcpp-custom-${{ github.sha }}.tar.gz
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: koboldcpp-image-${{ github.sha }}
+          path: artifacts/koboldcpp-custom-${{ github.sha }}.tar.gz
+          retention-days: 14
