@@ -1,19 +1,23 @@
-version: "3.9"
+# Environment variables requiered:
+#KCPP_MODEL_FILE=model.gguf
+#KCPP_MODELS_PATH=local_path_to_models
+#KCPP_IMAGE=ghcr.io/dam-pav/koboldcpp-custom:latestversion: "3.9"
 
 services:
   koboldcpp:
     image: ${KCPP_IMAGE:-koboldcpp-custom:homoai}
     container_name: koboldcpp
     environment:
-      KCPP_MODEL: "/app/models/hathor_stable-v0.2-l3-8b-q8_0.gguf"
+      KCPP_MODEL: "/app/models/${KCPP_MODEL_FILE}"
       KCPP_ARGS: >
         --usecublas
-        --contextsize 65536
+        --tensor-split 1 1
+        --contextsize 131072
         --gpulayers 31
         --flashattention
         --quantkv 2
-        # IMPORTANT: don't append a stray "0" after any flag.
-        # If you eventually try --remotetunnel, it must be just "--remotetunnel" (no value).
+        --lowvram
+        --threads 16
 
       KCPP_HOST: "0.0.0.0"
       KCPP_PORT: "5001"
@@ -22,14 +26,9 @@ services:
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
 
     volumes:
-      - /home/damjan/KoboldCPP:/app/models
+      - ${KCPP_MODELS_PATH}:/app/models
     ports:
       - "5001:5001"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: "all"
-              capabilities: ["gpu"]
+    # For Docker 29 compose (non-swarm), this is the important bit:
+    gpus: "all"
     restart: unless-stopped
