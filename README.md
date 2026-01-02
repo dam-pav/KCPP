@@ -1,6 +1,6 @@
 # KoboldCpp Docker Build
 
-This repo builds a GPU-enabled KoboldCpp image and runs it with Docker Compose. You can continue to build locally or configure a private (self-hosted) GitHub Actions runner to publish ready-to-load Docker image artifacts.
+This repo builds a GPU-enabled KoboldCpp image and runs it with Docker Compose. You can continue to build locally or configure a private (self-hosted) GitHub Actions runner to publish ready-to-load Docker image artifacts and a registry image address consumable from any Compose deployment.
 
 ## Local workflow
 
@@ -13,7 +13,7 @@ This repo builds a GPU-enabled KoboldCpp image and runs it with Docker Compose. 
    ```bash
    docker compose up -d
    ```
-   The container listens on port 5001 and inherits CUDA access from the host as defined in `compose.yml`.
+   The container listens on port 5001 and inherits CUDA access from the host as defined in `compose.yml`. Override the image via `KCPP_IMAGE=... docker compose up -d` if you want to pull from GHCR instead of the local tag.
 
 ## Create the GitHub repository
 
@@ -37,11 +37,41 @@ This repo builds a GPU-enabled KoboldCpp image and runs it with Docker Compose. 
 The workflow defined in `.github/workflows/build-image.yml` runs on each push to `main` and on manual `workflow_dispatch` events. It performs the following steps on the private runner:
 
 1. Checks out the repo.
-2. Builds the Docker image with tag `koboldcpp-custom:<git-sha>`.
-3. Exports the image to `artifacts/koboldcpp-custom-<git-sha>.tar.gz` using `docker save`.
-4. Uploads the archive as a workflow artifact named `koboldcpp-image-<git-sha>` (kept for 14 days).
+2. Builds the Docker image and tags it as `ghcr.io/<owner>/koboldcpp-custom:<git-sha>` and `:latest`.
+3. Pushes both tags to GitHub Container Registry (GHCR) using the repo-scoped `GITHUB_TOKEN`.
+4. Exports the image to `artifacts/koboldcpp-custom-<git-sha>.tar.gz` using `docker save` as an optional fallback.
+5. Uploads the archive as a workflow artifact named `koboldcpp-image-<git-sha>` (kept for 14 days).
 
 To build on demand, open **Actions → Build KoboldCpp Image → Run workflow** and choose the branch.
+
+### Referencing the published image
+
+After the workflow completes, the image is available at:
+
+```
+ghcr.io/<github-username-or-org>/koboldcpp-custom:<git-sha>
+ghcr.io/<github-username-or-org>/koboldcpp-custom:latest
+```
+
+Replace `<github-username-or-org>` with the owner shown in your repository URL. GHCR enforces lower-case names, so use lower-case in Compose files.
+
+To use the remote image inside `compose.yml`, either replace the `image` line directly or drive it via an environment variable, for example:
+
+```yaml
+services:
+   koboldcpp:
+      image: ${KCPP_IMAGE:-ghcr.io/your-account/koboldcpp-custom:latest}
+```
+
+Then set `KCPP_IMAGE=ghcr.io/your-account/koboldcpp-custom:<git-sha>` (or `:latest`) when deploying. Compose will pull the matching GHCR image automatically.
+
+If the repository is private, authenticate Docker before pulling:
+
+```bash
+echo "<pat-with-read-packages>" | docker login ghcr.io -u <github-username> --password-stdin
+```
+
+Generate a classic PAT (or fine-grained PAT) with at least the `read:packages` scope for hosts that only need to run the container.
 
 ## Using the artifact
 

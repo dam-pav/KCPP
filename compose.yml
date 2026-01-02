@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   koboldcpp:
-    image: koboldcpp-custom:homoai
+    image: ${KCPP_IMAGE:-koboldcpp-custom:homoai}
     container_name: koboldcpp
     environment:
       KCPP_MODEL: "/app/models/hathor_stable-v0.2-l3-8b-q8_0.gguf"
