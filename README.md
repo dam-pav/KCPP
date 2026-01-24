@@ -63,8 +63,10 @@ Key environment variables used by `docker-compose.yml`:
 
 ## GPU Selection
 
-If you select a single GPU (set KCPP_GPU_SELECTION to the GPU index instead of 'all') make sure you also set KCPP_TENSOR_SPLIT. When all GPUs are used the tensor split is '1 1'. When a single GPU is used however, you must set the split to simply '1'. There is no if/then syntax in compose so you need to do this manually in the setup.
+If you select a single GPU (set KCPP_GPU_SELECTION to the GPU index instead of 'all') make sure you also set KCPP_TENSOR_SPLIT. When two GPUs are used the tensor split is '1 1'. When a single GPU is used however, you must set the split to simply '1'. There is no if/then syntax in compose so you need to do this manually in the setup.
 
 ## Advanced Configuration
 
-In case you need to tweak more than just these values you'll need to customize the compose file. For instance, if you want to use additional arguments (KCPP_ARGS) or change values that are not driven by .env variables.
+In case you need to tweak more than just the environment variable values you'll need to customize the compose file. For instance, if you want to use additional arguments (KCPP_ARGS). 
+
+In Portainer you can start with a default git stack and detach from git later.
