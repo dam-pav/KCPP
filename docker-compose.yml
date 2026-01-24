@@ -1,0 +1,47 @@
+# Required environment variables:
+# KCPP_MODEL_FILE=model.gguf
+# KCPP_MODELS_PATH=<path to your models directory>
+
+# Optional environment variables:
+# KCPP_GPU_SELECTION=all,0,1,etc.
+# KCPP_PORT=5001
+# KCPP_CONTEXT_SIZE=32768
+# KCPP_CONTEXT_SIZE=65536
+# KCPP_CONTEXT_SIZE=131072
+# KCPP_TENSOR_SPLIT= '1 1' for dual gpu, '1' for single gpu
+
+version: "3.9"
+
+services:
+  koboldcpp:
+    image: ghcr.io/dam-pav/koboldcpp:latest
+    container_name: koboldcpp
+    environment:
+      KCPP_MODEL: "/app/models/${KCPP_MODEL_FILE}"
+      KCPP_ARGS: >
+        --usecublas
+        --tensor-split ${KCPP_TENSOR_SPLIT:-1 1}
+        --contextsize ${KCPP_CONTEXT_SIZE:-32768}
+        --gpulayers 31
+        --flashattention
+        --quantkv 2
+        --lowvram
+        --threads 16
+
+      KCPP_HOST: "0.0.0.0"
+      KCPP_PORT: "5001"
+
+      NVIDIA_VISIBLE_DEVICES: "${KCPP_GPU_SELECTION:-all}"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+
+    volumes:
+      - ${KCPP_MODELS_PATH}:/app/models
+    ports:
+      - "${KCPP_PORT:-5001}:5001"
+
+    # For Docker 29 compose (non-swarm), this is the important bit:
+    gpus:
+      - device_ids: ["${KCPP_GPU_SELECTION:-all}"]
+        capabilities: ["gpu"]
+        
+    restart: unless-stopped

@@ -21,7 +21,7 @@ jobs:
 
       - name: Derive image coordinates
         run: |
-          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/koboldcpp-custom
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/koboldcpp
           echo "IMAGE_NAME=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
 
       - name: Log in to GitHub Container Registry
@@ -46,11 +46,11 @@ jobs:
       - name: Export Docker image
         run: |
           mkdir -p artifacts
-          docker save "$IMAGE_NAME:${{ github.sha }}" | gzip > artifacts/koboldcpp-custom-${{ github.sha }}.tar.gz
+          docker save "$IMAGE_NAME:${{ github.sha }}" | gzip > artifacts/koboldcpp-${{ github.sha }}.tar.gz
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: koboldcpp-image-${{ github.sha }}
-          path: artifacts/koboldcpp-custom-${{ github.sha }}.tar.gz
+          path: artifacts/koboldcpp-${{ github.sha }}.tar.gz
           retention-days: 14
