@@ -3,11 +3,11 @@
 # KCPP_MODELS_PATH=<path to your models directory>
 
 # Optional environment variables:
-# KCPP_GPU_SELECTION=all,0,1,etc.
 # KCPP_PORT=5001
 # KCPP_CONTEXT_SIZE=32768
 # KCPP_CONTEXT_SIZE=65536
 # KCPP_CONTEXT_SIZE=131072
+# KCPP_GPU_SELECTION=all,0,1,etc.
 # KCPP_TENSOR_SPLIT= '1 1' for dual gpu, '1' for single gpu
 
 version: "3.9"
