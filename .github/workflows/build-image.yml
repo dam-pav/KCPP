@@ -4,10 +4,95 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: "0 3 * * *"
   workflow_dispatch:
 
 jobs:
+  check-upstream:
+    runs-on: [self-hosted, linux, x64]
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      should_build: ${{ steps.decide.outputs.should_build }}
+      upstream_sha: ${{ steps.upstream.outputs.upstream_sha }}
+    steps:
+      - name: Resolve upstream HEAD SHA
+        id: upstream
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = 'LostRuins';
+            const repo = 'koboldcpp';
+            const { data: repoData } = await github.rest.repos.get({ owner, repo });
+            const ref = repoData.default_branch;
+            const { data: commitData } = await github.rest.repos.getCommit({ owner, repo, ref });
+            core.setOutput('upstream_sha', commitData.sha);
+
+      - name: Decide whether scheduled build is needed
+        id: decide
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const upstreamSha = '${{ steps.upstream.outputs.upstream_sha }}';
+            const upstreamTag = `upstream-${upstreamSha}`;
+            const eventName = context.eventName;
+            if (eventName !== 'schedule') {
+              core.info(`Event is ${eventName}; forcing build.`);
+              core.setOutput('should_build', 'true');
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const packageName = 'koboldcpp';
+            const ownerType = context.payload.repository.owner.type;
+            let versions = [];
+
+            try {
+              if (ownerType === 'Organization') {
+                versions = await github.paginate(
+                  github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg,
+                  {
+                    org: owner,
+                    package_type: 'container',
+                    package_name: packageName,
+                    per_page: 100
+                  }
+                );
+              } else {
+                versions = await github.paginate(
+                  github.rest.packages.getAllPackageVersionsForPackageOwnedByUser,
+                  {
+                    username: owner,
+                    package_type: 'container',
+                    package_name: packageName,
+                    per_page: 100
+                  }
+                );
+              }
+            } catch (error) {
+              if (error.status === 404) {
+                core.info(`Container package ${packageName} not found yet; build is needed.`);
+                core.setOutput('should_build', 'true');
+                return;
+              }
+              throw error;
+            }
+
+            const alreadyBuilt = versions.some((version) => {
+              const tags = version.metadata?.container?.tags ?? [];
+              return tags.includes(upstreamTag);
+            });
+
+            core.info(`Upstream SHA: ${upstreamSha}`);
+            core.info(`Tag checked: ${upstreamTag}`);
+            core.info(`Already built: ${alreadyBuilt}`);
+            core.setOutput('should_build', alreadyBuilt ? 'false' : 'true');
+
   build-and-push:
+    needs: check-upstream
+    if: needs.check-upstream.outputs.should_build == 'true'
     runs-on: [self-hosted, linux, x64]
     permissions:
       contents: read
@@ -33,13 +118,19 @@ jobs:
 
       - name: Build Docker image
         run: |
+          UPSTREAM_SHA="${{ needs.check-upstream.outputs.upstream_sha }}"
           docker build \
+            --label "org.opencontainers.image.source=https://github.com/LostRuins/koboldcpp" \
+            --label "org.opencontainers.image.revision=${UPSTREAM_SHA}" \
+            --tag "$IMAGE_NAME:upstream-${UPSTREAM_SHA}" \
             --tag "$IMAGE_NAME:${{ github.sha }}" \
             --tag "$IMAGE_NAME:latest" \
             .
 
       - name: Push Docker image
         run: |
+          UPSTREAM_SHA="${{ needs.check-upstream.outputs.upstream_sha }}"
+          docker push "$IMAGE_NAME:upstream-${UPSTREAM_SHA}"
           docker push "$IMAGE_NAME:${{ github.sha }}"
           docker push "$IMAGE_NAME:latest"
 
@@ -54,3 +145,14 @@ jobs:
           name: koboldcpp-image-${{ github.sha }}
           path: artifacts/koboldcpp-${{ github.sha }}.tar.gz
           retention-days: 14
+
+  skip-notice:
+    needs: check-upstream
+    if: needs.check-upstream.outputs.should_build != 'true'
+    runs-on: [self-hosted, linux, x64]
+    env:
+      UPSTREAM_SHA: ${{ needs.check-upstream.outputs.upstream_sha }}
+    steps:
+      - name: Report skipped build
+        run: |
+          echo "No upstream changes detected at LostRuins/koboldcpp (${UPSTREAM_SHA}). Skipping build."
