@@ -22,14 +22,33 @@ This repository provides a ready‑to‑run Docker and Docker Compose setup for 
 2. Copy `docker-compose.yml` to a suitable folder on your host. Create a `.env` file next to `docker-compose.yml`:
 
 	```env
-	KCPP_MODEL_FILE=your-model.gguf
-	KCPP_MODELS_PATH=/home/you/models
+	# Required environment variables:
+	# KCPP_MODEL_FILE=<model.gguf>
+	# KCPP_MODELS_PATH=<path to your models directory>
 
-	# Optional overrides
-	# KCPP_GPU_SELECTION=all       # or 0,1,...
+	# Optional environment variables:
 	# KCPP_PORT=5001
+	# KCPP_GPU_SELECTION=all,0,1,etc.
+
+	# KoboldCPP pasrameters:
+	# KCPP_TENSOR_SPLIT= '1 1' for dual gpu, '1' for single gpu
 	# KCPP_CONTEXT_SIZE=32768
-	# KCPP_TENSOR_SPLIT="1 1"    # dual GPU example
+	# KCPP_CONTEXT_SIZE=65536
+	# KCPP_CONTEXT_SIZE=131072
+	# KCPP_QUANTKV=2
+	# KCPP_GPULAYERS=999
+	# KCPP_THREADS=12
+	# KCPP_BATCHSIZE=256
+	# KCPP_MAXREQUESTSIZE=64
+	# KCPP_DEFAULTGENAMT=2048
+
+	# These work as switches. If the var has any content, including "0" or "false", the flag will be added. If the var is empty or not set, the flag will be omitted.
+	# KCPP_USECUBLAS=1
+	# KCPP_FLASHATTENTION=1
+	# KCPP_SMARTCONTEXT=1
+	# KCPP_JINJA=1
+	# KCPP_JINJA_TOOLS=1
+	# KCPP_LOWVRAM=1
 	```
 
 3. Start the service:
