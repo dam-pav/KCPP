@@ -86,7 +86,7 @@ Key environment variables used by `docker-compose.yml`:
 - `KCPP_LOWVRAM` – Adds `--lowvram` when set.
 - `KCPP_NOFLASHATTENTION` – Adds `--noflashattention` when set.
 
-Switch-style variables are evaluated in the container shell when `KCPP_ARGS` is expanded. If the variable contains any value at all, even `0` or `false`, the corresponding flag is added. Leave it unset or empty to omit the flag.
+Switch-style variables are evaluated by the container entrypoint when `KCPP_ARGS` is resolved. If the variable contains any value at all, even `0` or `false`, the corresponding flag is added. Leave it unset or empty to omit the flag.
 
 ## GPU Selection
 

@@ -28,5 +28,6 @@ ENV KCPP_MODEL=/app/models/model.gguf \
     KCPP_PORT=5001
 
 # Simple entrypoint: no wrappers, no build script.
-# If you want to add flags like --usecublas, put them into KCPP_ARGS.
-ENTRYPOINT ["/bin/bash", "-lc", "exec /opt/koboldcpp --model \"$KCPP_MODEL\" --host \"$KCPP_HOST\" --port \"$KCPP_PORT\" $KCPP_ARGS"]
+# KCPP_ARGS may contain shell parameter expansions for optional switches,
+# so we use eval here to let those fragments resolve before exec.
+ENTRYPOINT ["/bin/bash", "-lc", "eval 'exec /opt/koboldcpp --model \"$KCPP_MODEL\" --host \"$KCPP_HOST\" --port \"$KCPP_PORT\" $KCPP_ARGS'"]
