@@ -28,6 +28,5 @@ ENV KCPP_MODEL=/app/models/model.gguf \
     KCPP_PORT=5001
 
 # Simple entrypoint: no wrappers, no build script.
-# KCPP_ARGS may contain shell parameter expansions for optional switches,
-# so we use eval here to let those fragments resolve before exec.
-ENTRYPOINT ["/bin/bash", "-lc", "eval 'exec /opt/koboldcpp --model \"$KCPP_MODEL\" --host \"$KCPP_HOST\" --port \"$KCPP_PORT\" $KCPP_ARGS'"]
+# First resolve KCPP_ARGS into "$@", then exec koboldcpp with the fixed args.
+ENTRYPOINT ["/bin/bash", "-lc", "eval \"set -- $KCPP_ARGS\"; exec /opt/koboldcpp --model \"$KCPP_MODEL\" --host \"$KCPP_HOST\" --port \"$KCPP_PORT\" \"$@\""]
