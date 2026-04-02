@@ -35,7 +35,7 @@ services:
     container_name: koboldcpp
     environment:
       KCPP_MODEL: "/app/models/${KCPP_MODEL_FILE}"
-      KCPP_ARGS: >
+      KCPP_ARGS: >-
         --tensor_split ${KCPP_TENSOR_SPLIT:-1 1}
         --contextsize ${KCPP_CONTEXT_SIZE:-32768}
         --quantkv ${KCPP_QUANTKV:-2}

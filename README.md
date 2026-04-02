@@ -88,6 +88,8 @@ Key environment variables used by `docker-compose.yml`:
 
 Switch-style variables are evaluated by the container entrypoint when `KCPP_ARGS` is resolved. If the variable contains any value at all, even `0` or `false`, the corresponding flag is added. Leave it unset or empty to omit the flag.
 
+The compose file uses YAML's `>-` folding style for `KCPP_ARGS` so Docker does not include a trailing newline in the environment variable. That trailing newline can confuse KoboldCpp's argument parser with this entrypoint pattern.
+
 ## GPU Selection
 
 If you select a single GPU (set `KCPP_GPU_SELECTION` to the GPU index instead of `all`) make sure you also set `KCPP_TENSOR_SPLIT`. When two GPUs are used the tensor split is `1 1`. When a single GPU is used you must set the split to simply `1`. There is no if/then syntax in Compose, so you need to do this manually in the setup.
