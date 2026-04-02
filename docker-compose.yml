@@ -4,11 +4,28 @@
 
 # Optional environment variables:
 # KCPP_PORT=5001
+# KCPP_GPU_SELECTION=all,0,1,etc.
+
+# KoboldCPP pasrameters:
+# KCPP_TENSOR_SPLIT= '1 1' for dual gpu, '1' for single gpu
 # KCPP_CONTEXT_SIZE=32768
 # KCPP_CONTEXT_SIZE=65536
 # KCPP_CONTEXT_SIZE=131072
-# KCPP_GPU_SELECTION=all,0,1,etc.
-# KCPP_TENSOR_SPLIT= '1 1' for dual gpu, '1' for single gpu
+# KCPP_QUANTKV=2
+# KCPP_GPULAYERS=999
+# KCPP_THREADS=12
+# KCPP_BATCHSIZE=256
+# KCPP_MAXREQUESTSIZE=64
+# KCPP_DEFAULTGENAMT=2048
+
+# These work as switches. If the var has any content, including "0" or "false", the flag will be added. If the var is empty or not set, the flag will be omitted.
+# KCPP_USECUBLAS=1
+# KCPP_FLASHATTENTION=1
+# KCPP_SMARTCONTEXT=1
+# KCPP_JINJA=1
+# KCPP_JINJA_TOOLS=1
+# KCPP_LOWVRAM=1
+
 
 version: "3.9"
 
@@ -19,14 +36,20 @@ services:
     environment:
       KCPP_MODEL: "/app/models/${KCPP_MODEL_FILE}"
       KCPP_ARGS: >
-        --usecublas
         --tensor-split ${KCPP_TENSOR_SPLIT:-1 1}
         --contextsize ${KCPP_CONTEXT_SIZE:-32768}
-        --gpulayers 31
-        --flashattention
-        --quantkv 2
-        --lowvram
-        --threads 16
+        --quantkv ${KCPP_QUANTKV:-2}
+        --gpulayers ${KCPP_GPULAYERS:-999}
+        --threads ${KCPP_THREADS:-12}
+        --batchsize ${KCPP_BATCHSIZE:-256}
+        --maxrequestsize 64
+        --defaultgenamt 2048        
+        $$(KCPP_USECUBLAS:+--usecublas)
+        $$(KCPP_FLASHATTENTION:+--flashattention)
+        $$(KCPP_SMARTCONTEXT:+--smartcontext)
+        $$(KCPP_JINJA:+--jinja)
+        $$(KCPP_JINJA_TOOLS:+--jinja_tools)
+        $$(KCPP_LOWVRAM:+--lowvram)
 
       KCPP_HOST: "0.0.0.0"
       KCPP_PORT: "5001"
