@@ -19,12 +19,12 @@
 # KCPP_DEFAULTGENAMT=2048
 
 # These work as switches. If the var has any content, including "0" or "false", the flag will be added. If the var is empty or not set, the flag will be omitted.
-# KCPP_USECUBLAS=1
-# KCPP_FLASHATTENTION=1
+# KCPP_USECUDA=1
 # KCPP_SMARTCONTEXT=1
 # KCPP_JINJA=1
 # KCPP_JINJA_TOOLS=1
 # KCPP_LOWVRAM=1
+# KCPP_NOFLASHATTENTION=1
 
 
 version: "3.9"
@@ -36,20 +36,20 @@ services:
     environment:
       KCPP_MODEL: "/app/models/${KCPP_MODEL_FILE}"
       KCPP_ARGS: >
-        --tensor-split ${KCPP_TENSOR_SPLIT:-1 1}
+        --tensor_split ${KCPP_TENSOR_SPLIT:-1 1}
         --contextsize ${KCPP_CONTEXT_SIZE:-32768}
         --quantkv ${KCPP_QUANTKV:-2}
         --gpulayers ${KCPP_GPULAYERS:-999}
         --threads ${KCPP_THREADS:-12}
         --batchsize ${KCPP_BATCHSIZE:-256}
-        --maxrequestsize 64
-        --defaultgenamt 2048        
-        $$(KCPP_USECUBLAS:+--usecublas)
-        $$(KCPP_FLASHATTENTION:+--flashattention)
-        $$(KCPP_SMARTCONTEXT:+--smartcontext)
-        $$(KCPP_JINJA:+--jinja)
-        $$(KCPP_JINJA_TOOLS:+--jinja_tools)
-        $$(KCPP_LOWVRAM:+--lowvram)
+        --maxrequestsize ${KCPP_MAXREQUESTSIZE:-64}
+        --defaultgenamt ${KCPP_DEFAULTGENAMT:-2048}
+        $${KCPP_USECUDA:+--usecuda}
+        $${KCPP_SMARTCONTEXT:+--smartcontext}
+        $${KCPP_JINJA:+--jinja}
+        $${KCPP_JINJA_TOOLS:+--jinja_tools}
+        $${KCPP_LOWVRAM:+--lowvram}
+        $${KCPP_NOFLASHATTENTION:+--noflashattention}
 
       KCPP_HOST: "0.0.0.0"
       KCPP_PORT: "5001"

@@ -1,6 +1,6 @@
 # KoboldCpp GPU Docker Setup
 
-This repository provides a ready‑to‑run Docker and Docker Compose setup for running the KoboldCpp inference server with NVIDIA GPU acceleration. It pulls the prebuilt KoboldCpp binary (CUDA/Vulkan enabled) and exposes the service on a configurable port. Designed to automatically mount your model directory and start KoboldCpp with GPU‑friendly defaults (CuBLAS, flash attention, etc.).
+This repository provides a ready-to-run Docker and Docker Compose setup for running the KoboldCpp inference server with NVIDIA GPU acceleration. It pulls the prebuilt KoboldCpp binary (CUDA/Vulkan enabled) and exposes the service on a configurable port. Designed to automatically mount your model directory and start KoboldCpp with GPU-friendly defaults.
 
 ## Features
 - Uses NVIDIA CUDA runtime image (Ubuntu 22.04)
@@ -30,7 +30,7 @@ This repository provides a ready‑to‑run Docker and Docker Compose setup for 
 	# KCPP_PORT=5001
 	# KCPP_GPU_SELECTION=all,0,1,etc.
 
-	# KoboldCPP pasrameters:
+	# KoboldCpp parameters:
 	# KCPP_TENSOR_SPLIT= '1 1' for dual gpu, '1' for single gpu
 	# KCPP_CONTEXT_SIZE=32768
 	# KCPP_CONTEXT_SIZE=65536
@@ -43,12 +43,12 @@ This repository provides a ready‑to‑run Docker and Docker Compose setup for 
 	# KCPP_DEFAULTGENAMT=2048
 
 	# These work as switches. If the var has any content, including "0" or "false", the flag will be added. If the var is empty or not set, the flag will be omitted.
-	# KCPP_USECUBLAS=1
-	# KCPP_FLASHATTENTION=1
+	# KCPP_USECUDA=1
 	# KCPP_SMARTCONTEXT=1
 	# KCPP_JINJA=1
 	# KCPP_JINJA_TOOLS=1
 	# KCPP_LOWVRAM=1
+	# KCPP_NOFLASHATTENTION=1
 	```
 
 3. Start the service:
@@ -78,14 +78,22 @@ Key environment variables used by `docker-compose.yml`:
 - `KCPP_PORT` – External port for the KoboldCpp server (default `5001`).
 - `KCPP_CONTEXT_SIZE` – Context size passed as `--contextsize` (e.g. `32768`, `65536`, `131072`).
 - `KCPP_GPU_SELECTION` – Which GPU(s) to use (`all`, `0`, `1`, `0,1`, etc.).
-- `KCPP_TENSOR_SPLIT` – Tensor split configuration for multi‑GPU setups (e.g. `"1"` for single GPU, `"1 1"` for dual GPU).
+- `KCPP_TENSOR_SPLIT` – Tensor split configuration for multi-GPU setups (e.g. `"1"` for single GPU, `"1 1"` for dual GPU).
+- `KCPP_USECUDA` – Adds `--usecuda` when set.
+- `KCPP_SMARTCONTEXT` – Adds `--smartcontext` when set.
+- `KCPP_JINJA` – Adds `--jinja` when set.
+- `KCPP_JINJA_TOOLS` – Adds `--jinja_tools` when set.
+- `KCPP_LOWVRAM` – Adds `--lowvram` when set.
+- `KCPP_NOFLASHATTENTION` – Adds `--noflashattention` when set.
+
+Switch-style variables are evaluated in the container shell when `KCPP_ARGS` is expanded. If the variable contains any value at all, even `0` or `false`, the corresponding flag is added. Leave it unset or empty to omit the flag.
 
 ## GPU Selection
 
-If you select a single GPU (set KCPP_GPU_SELECTION to the GPU index instead of 'all') make sure you also set KCPP_TENSOR_SPLIT. When two GPUs are used the tensor split is '1 1'. When a single GPU is used however, you must set the split to simply '1'. There is no if/then syntax in compose so you need to do this manually in the setup.
+If you select a single GPU (set `KCPP_GPU_SELECTION` to the GPU index instead of `all`) make sure you also set `KCPP_TENSOR_SPLIT`. When two GPUs are used the tensor split is `1 1`. When a single GPU is used you must set the split to simply `1`. There is no if/then syntax in Compose, so you need to do this manually in the setup.
 
 ## Advanced Configuration
 
-In case you need to tweak more than just the environment variable values you'll need to customize the compose file. For instance, if you want to use additional arguments (KCPP_ARGS). 
+If you need to tweak more than just the environment variable values, customize [`docker-compose.yml`](/home/damjan/KCPP/docker-compose.yml). For instance, you can add extra arguments through `KCPP_ARGS`.
 
 In Portainer you can start with a default git stack and detach from git later.
