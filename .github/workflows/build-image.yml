@@ -30,65 +30,42 @@ jobs:
             const { data: commitData } = await github.rest.repos.getCommit({ owner, repo, ref });
             core.setOutput('upstream_sha', commitData.sha);
 
+      - name: Derive image coordinates
+        run: |
+          IMAGE_NAME=ghcr.io/${{ github.repository_owner }}/koboldcpp
+          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'schedule'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
+
       - name: Decide whether scheduled build is needed
         id: decide
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const upstreamSha = '${{ steps.upstream.outputs.upstream_sha }}';
-            const upstreamTag = `upstream-${upstreamSha}`;
-            const eventName = context.eventName;
-            if (eventName !== 'schedule') {
-              core.info(`Event is ${eventName}; forcing build.`);
-              core.setOutput('should_build', 'true');
-              return;
-            }
+        env:
+          UPSTREAM_SHA: ${{ steps.upstream.outputs.upstream_sha }}
+        run: |
+          UPSTREAM_TAG="upstream-${UPSTREAM_SHA}"
 
-            const owner = context.repo.owner;
-            const packageName = 'koboldcpp';
-            const ownerType = context.payload.repository.owner.type;
-            let versions = [];
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "Event is ${{ github.event_name }}; forcing build."
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-            try {
-              if (ownerType === 'Organization') {
-                versions = await github.paginate(
-                  github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg,
-                  {
-                    org: owner,
-                    package_type: 'container',
-                    package_name: packageName,
-                    per_page: 100
-                  }
-                );
-              } else {
-                versions = await github.paginate(
-                  github.rest.packages.getAllPackageVersionsForPackageOwnedByUser,
-                  {
-                    username: owner,
-                    package_type: 'container',
-                    package_name: packageName,
-                    per_page: 100
-                  }
-                );
-              }
-            } catch (error) {
-              if (error.status === 404) {
-                core.info(`Container package ${packageName} not found yet; build is needed.`);
-                core.setOutput('should_build', 'true');
-                return;
-              }
-              throw error;
-            }
+          echo "Upstream SHA: ${UPSTREAM_SHA}"
+          echo "Tag checked: ${UPSTREAM_TAG}"
 
-            const alreadyBuilt = versions.some((version) => {
-              const tags = version.metadata?.container?.tags ?? [];
-              return tags.includes(upstreamTag);
-            });
-
-            core.info(`Upstream SHA: ${upstreamSha}`);
-            core.info(`Tag checked: ${upstreamTag}`);
-            core.info(`Already built: ${alreadyBuilt}`);
-            core.setOutput('should_build', alreadyBuilt ? 'false' : 'true');
+          if docker manifest inspect "$IMAGE_NAME:${UPSTREAM_TAG}" >/dev/null 2>&1; then
+            echo "Already built: true"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Already built: false"
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
 
   build-and-push:
     needs: check-upstream
